@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>试验项目管理系统</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a1628; color: #fff; }
+    .page { padding: 12px; height: 100%; display: flex; flex-direction: column; }
+    .header { margin-bottom: 12px; flex-shrink: 0; }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header p { color: #6b7b8c; margin-top: 4px; font-size: 12px; }
+    
+    .btn { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 4px; cursor: pointer; border: none; font-size: 12px; }
+    .btn-primary { background: #1890ff; color: white; }
+    .btn-default { background: #162236; color: #a6b5c7; border: 1px solid #1f3a5f; }
+    .btn-ghost { background: transparent; color: #1890ff; border: 1px solid #1890ff; }
+    
+    .stat-row, .card-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; flex-shrink: 0; }
+    .stat-card { position: relative; background: #162236; border: 1px solid #1f3a5f; border-radius: 6px; padding: 12px; overflow: hidden; }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: #1890ff; }
+    .stat-card.success::before { background: #52c41a; }
+    .stat-card.error::before { background: #ff4d4f; }
+    .stat-content { display: flex; justify-content: space-between; align-items: center; }
+    .stat-value { font-size: 24px; font-weight: 700; }
+    .stat-label { font-size: 11px; color: #6b7b8c; margin-bottom: 4px; }
+    .stat-icon { width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    
+    .main-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; flex-shrink: 0; }
+    
+    .card { background: #162236; border: 1px solid #1f3a5f; border-radius: 6px; padding: 12px; }
+    .card-title { font-size: 13px; font-weight: 500; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #1f3a5f; }
+    
+    .pie-container { display: flex; align-items: center; justify-content: center; gap: 15px; min-height: 150px; }
+    .pie-chart { width: 120px; height: 120px; }
+    .pie-legend { display: flex; flex-direction: column; gap: 5px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #a6b5c7; }
+    .legend-color { width: 10px; height: 10px; border-radius: 50%; }
+    
+    .project-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .project-card { background: #0f1a29; border: 1px solid #1f3a5f; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; min-height: 160px; }
+    .card.fixed-height { min-height: 150px; }
+    .project-card:hover { border-color: #1890ff; }
+    .project-card.placeholder { cursor: default; opacity: 0; }
+    .project-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .project-title { font-size: 12px; font-weight: 600; }
+    .project-info { display: flex; gap: 10px; margin-bottom: 8px; font-size: 10px; color: #a6b5c7; }
+    .project-step { font-size: 10px; color: #6b7b8c; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .project-progress { margin-bottom: 3px; display: flex; justify-content: space-between; font-size: 10px; color: #6b7b8c; }
+    .progress-bar { height: 5px; background: #1f3a5f; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #1890ff; border-radius: 3px; }
+    .project-footer { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10px; color: #6b7b8c; }
+    
+    .mini-project-card { background: rgba(26, 42, 62, 0.6); border: 1px solid #1f3a5f; border-radius: 4px; padding: 8px; cursor: pointer; transition: all 0.2s; min-height: 70px; }
+    .mini-project-card:hover { background: rgba(26, 42, 62, 0.8); border-color: #1890ff; }
+    .mini-project-card.placeholder { background: rgba(26, 42, 62, 0.2); border: 1px dashed #1f3a5f; cursor: default; }
+    .mini-project-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11px; font-weight: 500; }
+    .mini-project-info { font-size: 9px; color: #6b7b8c; margin-bottom: 4px; }
+    .mini-project-step { font-size: 9px; color: #6b7b8c; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mini-progress { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .mini-progress .progress-bar { height: 4px; flex: 1; }
+    .mini-progress span { font-size: 9px; color: #6b7b8c; }
+    .mini-info { font-size: 9px; color: #6b7b8c; }
+    
+    .tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; }
+    .tag-processing { background: rgba(24, 144, 255, 0.15); color: #1890ff; }
+    .tag-ready { background: rgba(250, 173, 20, 0.15); color: #faad14; }
+    .tag-pending { background: rgba(107, 123, 140, 0.15); color: #6b7b8c; }
+    .tag-done { background: rgba(82, 196, 26, 0.15); color: #52c41a; }
+    .tag-error { background: rgba(255, 77, 79, 0.15); color: #ff4d4f; }
+    
+    .btn-suspend { padding: 2px 8px; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; transition: all 0.2s; background: rgba(255, 77, 79, 0.15); color: #ff4d4f; border: 1px solid rgba(255, 77, 79, 0.3); }
+    .btn-suspend:hover { background: rgba(255, 77, 79, 0.25); }
+    .btn-resume { padding: 2px 8px; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; transition: all 0.2s; background: rgba(82, 196, 26, 0.15); color: #52c41a; border: 1px solid rgba(82, 196, 26, 0.3); }
+    .btn-resume:hover { background: rgba(82, 196, 26, 0.25); }
+    
+    .table-container { overflow-x: hidden; flex: 1; min-height: 0; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+    .data-table th, .data-table td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #1f3a5f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .data-table th { background: rgba(26, 42, 62, 0.5); font-weight: 500; font-size: 10px; }
+    .data-table tr:hover { background: rgba(26, 42, 62, 0.5); }
+    .link { color: #1890ff; cursor: pointer; text-decoration: underline; }
+    
+    .timeline-horizontal { display: flex; align-items: center; gap: 8px; padding: 8px 0; position: relative; }
+    .timeline-horizontal::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: #1f3a5f; transform: translateY(-50%); }
+    .timeline-item-horizontal { display: flex; align-items: center; gap: 10px; position: relative; z-index: 1; padding: 0 8px; cursor: pointer; transition: transform 0.2s; }
+    .timeline-item-horizontal:hover { transform: translateY(-3px); }
+    .timeline-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .timeline-content { display: flex; flex-direction: column; gap: 2px; }
+    .timeline-title { font-size: 11px; font-weight: 500; white-space: nowrap; }
+    .timeline-meta { display: flex; align-items: center; gap: 6px; }
+    .timeline-date { font-size: 10px; color: #6b7b8c; white-space: nowrap; }
+    
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #1f3a5f; }
+    .pagination-btn { padding: 4px 12px; font-size: 11px; }
+    .pagination-btn.active { background: #1890ff; color: white; }
+    .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .scroll-text-container { overflow: hidden; white-space: nowrap; }
+    .scroll-text { display: inline-block; animation: scroll 8s linear infinite; }
+    @keyframes scroll {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    
+    .detail-page { padding: 12px; height: 100%; display: flex; flex-direction: column; }
+    .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-shrink: 0; }
+    .detail-title h1 { font-size: 16px; margin-bottom: 4px; }
+    .detail-title p { color: #6b7b8c; font-size: 12px; }
+    .detail-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; flex-shrink: 0; }
+    .detail-card { background: #162236; border: 1px solid #1f3a5f; border-radius: 6px; padding: 10px; }
+    .detail-card-label { font-size: 11px; color: #6b7b8c; margin-bottom: 4px; }
+    .detail-card-value { font-size: 13px; font-weight: 500; }
+    
+    .steps-container { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; flex: 1; min-height: 0; }
+    .steps-list { padding-right: 10px; overflow-y: auto; }
+    .step-item { padding: 8px 10px; margin-bottom: 6px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+    .step-item.active { background: rgba(24, 144, 255, 0.1); border-left: 3px solid #1890ff; }
+    .step-item.completed { color: #52c41a; }
+    .step-item.error { color: #ff4d4f; }
+    .step-title { font-size: 11px; font-weight: 500; margin-bottom: 3px; }
+    .step-status { font-size: 10px; }
+    
+    .step-detail { background: rgba(26, 42, 62, 0.5); border: 1px solid #1f3a5f; border-radius: 6px; padding: 12px; overflow-y: auto; }
+    .detail-section { margin-bottom: 12px; }
+    .detail-section:last-child { margin-bottom: 0; }
+    .detail-section-title { font-size: 12px; font-weight: 500; margin-bottom: 8px; }
+    .precondition-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1f3a5f; }
+    .precondition-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .precondition-icon.ok { background: rgba(82, 196, 26, 0.15); }
+    .precondition-icon.pending { background: rgba(250, 173, 20, 0.15); }
+    .precondition-info { flex: 1; }
+    .precondition-label { font-size: 11px; color: #6b7b8c; }
+    .precondition-value { font-size: 12px; margin-top: 2px; }
+    .precondition-check { font-size: 14px; }
+    
+    .input-output-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1f3a5f; }
+    .input-output-name { font-size: 11px; color: #6b7b8c; }
+    .input-output-value { font-size: 11px; }
+    
+    .actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #1f3a5f; }
+    
+    .nav-tabs { display: flex; gap: 12px; margin-bottom: 12px; }
+    .tab { padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .tab.active { background: #1890ff; color: white; }
+    .tab.inactive { background: #162236; color: #a6b5c7; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    var mockProjects = [
+      { id: 'p1', name: 'C101-10', vin: 'LSVAG2180E2100011', model: 'Model A', status: '试验中', stepIndex: 3, startTime: '2026-05-01', endTime: '2026-05-20', person: '张工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成', assignee: '张工程师', pre: { person: { ok: true, current: '张工程师' }, machine: { ok: true, current: '已就绪' }, material: { ok: true, current: '已备齐' }, env: { ok: true, current: '已预留' } }, inputs: [], outputs: [{ name: '车辆状态报告', value: '车辆完好' }] },
+          { id: 's2', name: '传感器安装与调试', status: '已完成', assignee: '李工程师', pre: { person: { ok: true, current: '李工程师' }, machine: { ok: true, current: '已就绪' }, material: { ok: true, current: '已备齐' }, env: { ok: true, current: '已预留' } }, inputs: [], outputs: [] },
+          { id: 's3', name: '假人配置与校准', status: '已完成', assignee: '王工程师', pre: { person: { ok: true, current: '王工程师' }, machine: { ok: true, current: '已就绪' }, material: { ok: true, current: '已备齐' }, env: { ok: true, current: '已预留' } }, inputs: [], outputs: [] },
+          { id: 's4', name: '碰撞试验执行', status: '进行中', assignee: '张工程师', pre: { person: { ok: true, current: '张工程师' }, machine: { ok: true, current: '已就绪' }, material: { ok: true, current: '已备齐' }, env: { ok: true, current: '已预留' } }, inputs: [], outputs: [] },
+          { id: 's5', name: '数据采集与分析', status: '未开始', assignee: '陈工程师', pre: { person: { ok: false }, machine: { ok: false }, material: { ok: false }, env: { ok: false } }, inputs: [], outputs: [] }
+        ]
+      },
+      { id: 'p2', name: 'P567', vin: 'LSVAG2180E2100012', model: 'Model B', status: '准备中', stepIndex: 1, startTime: '2026-05-10', endTime: '2026-05-28', person: '李工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成', assignee: '李工程师', pre: { person: { ok: true, current: '李工程师' }, machine: { ok: true, current: '已就绪' }, material: { ok: true, current: '已备齐' }, env: { ok: true, current: '已预留' } }, inputs: [], outputs: [] },
+          { id: 's2', name: '传感器安装与调试', status: '前置检查中', assignee: '李工程师', pre: { person: { ok: true, current: '李工程师' }, machine: { ok: false, current: '待确认' }, material: { ok: false, current: '待准备' }, env: { ok: false, current: '待确认' } }, inputs: [], outputs: [] },
+          { id: 's3', name: '假人配置与校准', status: '未开始', assignee: '王工程师', pre: { person: { ok: false }, machine: { ok: false }, material: { ok: false }, env: { ok: false } }, inputs: [], outputs: [] },
+          { id: 's4', name: '碰撞试验执行', status: '未开始', assignee: '张工程师', pre: { person: { ok: false }, machine: { ok: false }, material: { ok: false }, env: { ok: false } }, inputs: [], outputs: [] },
+          { id: 's5', name: '数据采集与分析', status: '未开始', assignee: '陈工程师', pre: { person: { ok: false }, machine: { ok: false }, material: { ok: false }, env: { ok: false } }, inputs: [], outputs: [] }
+        ]
+      },
+      { id: 'p3', name: 'E702', vin: 'LSVAG2180E2100013', model: 'Model C', status: '异常挂起', stepIndex: 2, startTime: '2026-05-05', endTime: '2026-05-22', person: '王工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成', assignee: '王工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's2', name: '传感器安装与调试', status: '已完成', assignee: '李工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's3', name: '假人配置与校准', status: '异常挂起', assignee: '王工程师', pre: { person: { ok: true, current: '王工程师' }, machine: { ok: false, current: '设备故障' }, material: { ok: true, current: '已备齐' }, env: { ok: true, current: '已预留' } }, inputs: [], outputs: [] },
+          { id: 's4', name: '碰撞试验执行', status: '未开始', assignee: '张工程师', pre: { person: { ok: false }, machine: { ok: false }, material: { ok: false }, env: { ok: false } }, inputs: [], outputs: [] },
+          { id: 's5', name: '数据采集与分析', status: '未开始', assignee: '陈工程师', pre: { person: { ok: false }, machine: { ok: false }, material: { ok: false }, env: { ok: false } }, inputs: [], outputs: [] }
+        ]
+      },
+      { id: 'p4', name: 'C201', vin: 'LSVAG2180E2100014', model: 'Model D', status: '已完成', stepIndex: 5, startTime: '2026-03-01', endTime: '2026-03-20', person: '赵工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's2', name: '传感器安装与调试', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's3', name: '假人配置与校准', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's4', name: '碰撞试验执行', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's5', name: '数据采集与分析', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] }
+        ]
+      },
+      { id: 'p5', name: 'C301', vin: 'LSVAG2180E2100015', model: 'Model E', status: '已完成', stepIndex: 5, startTime: '2026-02-15', endTime: '2026-03-05', person: '孙工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's2', name: '传感器安装与调试', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's3', name: '假人配置与校准', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's4', name: '碰撞试验执行', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's5', name: '数据采集与分析', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] }
+        ]
+      },
+      { id: 'p6', name: 'C401', vin: 'LSVAG2180E2100016', model: 'Model F', status: '已完成', stepIndex: 5, startTime: '2026-01-20', endTime: '2026-02-10', person: '周工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's2', name: '传感器安装与调试', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's3', name: '假人配置与校准', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's4', name: '碰撞试验执行', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's5', name: '数据采集与分析', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] }
+        ]
+      },
+      { id: 'p7', name: 'C501', vin: 'LSVAG2180E2100017', model: 'Model G', status: '已完成', stepIndex: 5, startTime: '2026-01-05', endTime: '2026-01-25', person: '吴工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's2', name: '传感器安装与调试', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's3', name: '假人配置与校准', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's4', name: '碰撞试验执行', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's5', name: '数据采集与分析', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] }
+        ]
+      },
+      { id: 'p8', name: 'C601', vin: 'LSVAG2180E2100018', model: 'Model H', status: '已完成', stepIndex: 5, startTime: '2025-12-20', endTime: '2026-01-10', person: '郑工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's2', name: '传感器安装与调试', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's3', name: '假人配置与校准', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's4', name: '碰撞试验执行', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's5', name: '数据采集与分析', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] }
+        ]
+      },
+      { id: 'p9', name: 'C701', vin: 'LSVAG2180E2100019', model: 'Model I', status: '排队中', stepIndex: 0, startTime: '2026-06-01', endTime: '2026-06-20', person: '冯工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's2', name: '传感器安装与调试', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's3', name: '假人配置与校准', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's4', name: '碰撞试验执行', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] },
+          { id: 's5', name: '数据采集与分析', status: '已完成', assignee: '工程师', pre: { person: { ok: true }, machine: { ok: true }, material: { ok: true }, env: { ok: true } }, inputs: [], outputs: [] }
+        ]
+      }
+    ];
+
+    var mockTests = [
+      { id: 't1', name: 'C-NCAP 56FRB', vin: 'LSVAG2180E2100001', model: 'Model S', status: '试验中', stepIndex: 3, startTime: '2026-05-01', endTime: '2026-05-15', person: '张工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成' },
+          { id: 's2', name: '传感器安装与调试', status: '已完成' },
+          { id: 's3', name: '假人配置与校准', status: '已完成' },
+          { id: 's4', name: '碰撞试验执行', status: '进行中' },
+          { id: 's5', name: '数据采集与分析', status: '未开始' }
+        ]
+      },
+      { id: 't2', name: 'C-NCAP 50MPDB', vin: 'LSVAG2180E2100002', model: 'Model X', status: '准备中', stepIndex: 1, startTime: '2026-05-10', endTime: '2026-05-25', person: '李工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成' },
+          { id: 's2', name: '传感器安装与调试', status: '前置检查中' },
+          { id: 's3', name: '假人配置与校准', status: '未开始' },
+          { id: 's4', name: '碰撞试验执行', status: '未开始' },
+          { id: 's5', name: '数据采集与分析', status: '未开始' }
+        ]
+      },
+      { id: 't3', name: 'C-NCAP 60SC', vin: 'LSVAG2180E2100003', model: 'Model 3', status: '排队中', stepIndex: 0, startTime: '2026-05-20', endTime: '2026-06-05', person: '王工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '未开始' },
+          { id: 's2', name: '传感器安装与调试', status: '未开始' },
+          { id: 's3', name: '假人配置与校准', status: '未开始' },
+          { id: 's4', name: '碰撞试验执行', status: '未开始' },
+          { id: 's5', name: '数据采集与分析', status: '未开始' }
+        ]
+      },
+      { id: 't4', name: 'C-NCAP 32SP', vin: 'LSVAG2180E2100004', model: 'Model Y', status: '异常挂起', stepIndex: 2, startTime: '2026-05-05', endTime: '2026-05-18', person: '陈工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成' },
+          { id: 's2', name: '传感器安装与调试', status: '已完成' },
+          { id: 's3', name: '假人配置与校准', status: '异常挂起' },
+          { id: 's4', name: '碰撞试验执行', status: '未开始' },
+          { id: 's5', name: '数据采集与分析', status: '未开始' }
+        ]
+      },
+      { id: 't5', name: 'C-NCAP AEB', vin: 'LSVAG2180E2100005', model: 'Model A', status: '已完成', stepIndex: 5, startTime: '2026-04-01', endTime: '2026-04-20', person: '赵工程师',
+        steps: [
+          { id: 's1', name: '车辆运输及功能检查', status: '已完成' },
+          { id: 's2', name: '传感器安装与调试', status: '已完成' },
+          { id: 's3', name: '假人配置与校准', status: '已完成' },
+          { id: 's4', name: '碰撞试验执行', status: '已完成' },
+          { id: 's5', name: '数据采集与分析', status: '已完成' }
+        ]
+      }
+    ];
+
+    function getTagClass(status) {
+      var classes = {
+        '试验中': 'tag tag-processing',
+        '准备中': 'tag tag-ready',
+        '排队中': 'tag tag-pending',
+        '已完成': 'tag tag-done',
+        '异常挂起': 'tag tag-error'
+      };
+      return classes[status] || 'tag tag-pending';
+    }
+
+    function createPieChartSVG() {
+      var total = mockProjects.length;
+      var data = [
+        { status: '试验中', count: mockProjects.filter(function(p) { return p.status === '试验中'; }).length, color: '#1890ff' },
+        { status: '准备中', count: mockProjects.filter(function(p) { return p.status === '准备中'; }).length, color: '#faad14' },
+        { status: '排队中', count: mockProjects.filter(function(p) { return p.status === '排队中'; }).length, color: '#6b7b8c' },
+        { status: '已完成', count: mockProjects.filter(function(p) { return p.status === '已完成'; }).length, color: '#52c41a' },
+        { status: '异常挂起', count: mockProjects.filter(function(p) { return p.status === '异常挂起'; }).length, color: '#ff4d4f' }
+      ];
+      
+      var currentAngle = 0;
+      var svg = '';
+      data.forEach(function(item) {
+        if (item.count === 0) return;
+        var angle = (item.count / total) * 360;
+        var polarToCartesian = function(ang) {
+          var rad = (ang - 90) * Math.PI / 180;
+          return { x: 80 + 55 * Math.cos(rad), y: 80 + 55 * Math.sin(rad) };
+        };
+        var s = polarToCartesian(currentAngle + angle);
+        var e = polarToCartesian(currentAngle);
+        var largeArc = angle <= 180 ? 0 : 1;
+        var d = 'M 80 80 L ' + s.x + ' ' + s.y + ' A 55 55 0 ' + largeArc + ' 0 ' + e.x + ' ' + e.y + ' Z';
+        svg += '<path d="' + d + '" fill="' + item.color + '" stroke="#162236" stroke-width="2"/>';
+        currentAngle += angle;
+      });
+      svg += '<circle cx="80" cy="80" r="35" fill="#162236"/>';
+      svg += '<text x="80" y="76" text-anchor="middle" fill="#6b7b8c" font-size="10">项目总数</text>';
+      svg += '<text x="80" y="92" text-anchor="middle" fill="#fff" font-size="16" font-weight="bold">' + total + '</text>';
+      return svg;
+    }
+
+    function createVehiclePieChartSVG() {
+      var total = mockProjects.length;
+      var data = [
+        { status: '进行中', count: mockProjects.filter(function(p) { return p.status === '试验中' || p.status === '准备中' || p.status === '异常挂起'; }).length, color: '#1890ff' },
+        { status: '排队中', count: mockProjects.filter(function(p) { return p.status === '排队中'; }).length, color: '#6b7b8c' },
+        { status: '已完成', count: mockProjects.filter(function(p) { return p.status === '已完成'; }).length, color: '#52c41a' }
+      ];
+      
+      var currentAngle = 0;
+      var svg = '';
+      data.forEach(function(item) {
+        if (item.count === 0) return;
+        var angle = (item.count / total) * 360;
+        var polarToCartesian = function(ang) {
+          var rad = (ang - 90) * Math.PI / 180;
+          return { x: 60 + 40 * Math.cos(rad), y: 60 + 40 * Math.sin(rad) };
+        };
+        var s = polarToCartesian(currentAngle + angle);
+        var e = polarToCartesian(currentAngle);
+        var largeArc = angle <= 180 ? 0 : 1;
+        var d = 'M 60 60 L ' + s.x + ' ' + s.y + ' A 40 40 0 ' + largeArc + ' 0 ' + e.x + ' ' + e.y + ' Z';
+        svg += '<path d="' + d + '" fill="' + item.color + '" stroke="#162236" stroke-width="2"/>';
+        currentAngle += angle;
+      });
+      svg += '<circle cx="60" cy="60" r="28" fill="#162236"/>';
+      svg += '<text x="60" y="56" text-anchor="middle" fill="#6b7b8c" font-size="8">总数</text>';
+      svg += '<text x="60" y="70" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">' + total + '</text>';
+      return svg;
+    }
+
+    function createTestPieChartSVG() {
+      var total = mockTests.length;
+      var data = [
+        { status: '试验中', count: mockTests.filter(function(t) { return t.status === '试验中'; }).length, color: '#1890ff' },
+        { status: '准备中', count: mockTests.filter(function(t) { return t.status === '准备中'; }).length, color: '#faad14' },
+        { status: '排队中', count: mockTests.filter(function(t) { return t.status === '排队中'; }).length, color: '#6b7b8c' },
+        { status: '已完成', count: mockTests.filter(function(t) { return t.status === '已完成'; }).length, color: '#52c41a' },
+        { status: '异常挂起', count: mockTests.filter(function(t) { return t.status === '异常挂起'; }).length, color: '#ff4d4f' }
+      ];
+      
+      var currentAngle = 0;
+      var svg = '';
+      data.forEach(function(item) {
+        if (item.count === 0) return;
+        var angle = (item.count / total) * 360;
+        var polarToCartesian = function(ang) {
+          var rad = (ang - 90) * Math.PI / 180;
+          return { x: 60 + 40 * Math.cos(rad), y: 60 + 40 * Math.sin(rad) };
+        };
+        var s = polarToCartesian(currentAngle + angle);
+        var e = polarToCartesian(currentAngle);
+        var largeArc = angle <= 180 ? 0 : 1;
+        var d = 'M 60 60 L ' + s.x + ' ' + s.y + ' A 40 40 0 ' + largeArc + ' 0 ' + e.x + ' ' + e.y + ' Z';
+        svg += '<path d="' + d + '" fill="' + item.color + '" stroke="#162236" stroke-width="2"/>';
+        currentAngle += angle;
+      });
+      svg += '<circle cx="60" cy="60" r="28" fill="#162236"/>';
+      svg += '<text x="60" y="56" text-anchor="middle" fill="#6b7b8c" font-size="8">总数</text>';
+      svg += '<text x="60" y="70" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">' + total + '</text>';
+      return svg;
+    }
+
+    function createProjectCardHTML(project) {
+      var progress = Math.round((project.stepIndex / project.steps.length) * 100);
+      var currentStep = project.steps[project.stepIndex];
+      var progressColor = project.status === '异常挂起' ? '#ff4d4f' : (project.status === '已完成' ? '#52c41a' : '#1890ff');
+      var tagClass = getTagClass(project.status);
+      var canToggleStatus = project.status !== '已完成' && project.status !== '排队中';
+      var isSuspended = project.status === '异常挂起';
+      var btnClass = isSuspended ? 'btn-resume' : 'btn-suspend';
+      var btnText = isSuspended ? '✓' : '⚠️';
+      var btnTitle = isSuspended ? '取消异常挂起' : '异常挂起';
+      
+      return '<div class="project-card" data-projectid="' + project.id + '">' +
+        '<div class="project-header">' +
+          '<div class="project-title">' + project.name + '</div>' +
+          '<div style="display: flex; gap: 8px; align-items: center;">' +
+            '<span class="' + tagClass + '">' + project.status + '</span>' +
+            (canToggleStatus ? '<button class="' + btnClass + '" data-projectid="' + project.id + '" title="' + btnTitle + '">' + btnText + '</button>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="project-info"><span>VIN: ' + project.vin + '</span><span>车型: ' + project.model + '</span></div>' +
+        '<div class="project-step">当前步骤: ' + (currentStep ? currentStep.name : '无') + '</div>' +
+        '<div class="project-progress">整体进度<span style="color: #1890ff;">' + progress + '%</span></div>' +
+        '<div class="progress-bar"><div class="progress-fill" style="width: ' + progress + '%; background: ' + progressColor + ';"></div></div>' +
+        '<div class="project-footer"><span>负责人: ' + project.person + '</span><span>预计完成: ' + project.endTime + '</span></div>' +
+        '</div>';
+    }
+
+    function createTableRowHTML(project) {
+      var progress = Math.round((project.stepIndex / project.steps.length) * 100);
+      var progressColor = project.status === '异常挂起' ? '#ff4d4f' : (project.status === '已完成' ? '#52c41a' : '#1890ff');
+      var tagClass = getTagClass(project.status);
+      var currentStep = project.steps[project.stepIndex];
+      
+      var stepName = currentStep ? currentStep.name : '';
+      var scrollClass = stepName.length > 10 ? 'scroll-text-container' : '';
+      var displayText = stepName + '  ' + stepName;
+      
+      var testName = '';
+      if (project.name === 'C101-10') {
+        testName = 'C-NCAP 56FRB';
+      } else if (project.name === 'P567') {
+        testName = 'C-NCAP 50MPDB';
+      } else if (project.name === 'E702') {
+        testName = 'C-NCAP 32SP';
+      } else if (project.name === 'C701') {
+        testName = 'C-NCAP 60SC';
+      }
+      
+      return '<tr data-projectid="' + project.id + '">' +
+        '<td><span class="link">' + project.name + '</span></td>' +
+        '<td>' + testName + '</td>' +
+        '<td>' + project.vin + '</td>' +
+        '<td>' + project.model + '</td>' +
+        '<td><span class="' + tagClass + '">' + project.status + '</span></td>' +
+        '<td><div class="progress-bar" style="width: 60px;"><div class="progress-fill" style="width: ' + progress + '%; background: ' + progressColor + ';"></div></div><span style="margin-left: 4px; font-size: 10px; color: #6b7b8c;">' + progress + '%</span></td>' +
+        '<td title="' + stepName + '" style="max-width: 120px; overflow: hidden;">' + (scrollClass ? '<div class="' + scrollClass + '"><span class="scroll-text">' + displayText + '</span></div>' : stepName) + '</td>' +
+        '<td>' + project.person + '</td>' +
+        '<td>' + project.endTime + '</td>' +
+        '</tr>';
+    }
+
+    function createTimelineItemHTML(project) {
+      var dotColor = '#1890ff';
+      if (project.status === '异常挂起') dotColor = '#ff4d4f';
+      else if (project.status === '准备中') dotColor = '#faad14';
+      else if (project.status === '排队中') dotColor = '#6b7b8c';
+      return '<div class="timeline-item-horizontal" data-projectid="' + project.id + '">' +
+        '<div class="timeline-dot" style="background: ' + dotColor + ';"></div>' +
+        '<div class="timeline-content">' +
+        '<div class="timeline-title">' + project.name + '</div>' +
+        '<div class="timeline-meta"><span class="timeline-date">' + project.endTime + '</span></div>' +
+        '</div>' +
+        '</div>';
+    }
+
+    function createPreconditionItemHTML(icon, label, condition) {
+      var okClass = condition.ok ? 'ok' : 'pending';
+      var okColor = condition.ok ? '#fff' : '#faad14';
+      var checkColor = condition.ok ? '#52c41a' : '#faad14';
+      var checkSymbol = condition.ok ? '✓' : '✗';
+      var valueText = condition.ok ? condition.current : condition.current + '（待确认）';
+      
+      return '<div class="precondition-item">' +
+        '<div class="precondition-icon ' + okClass + '">' + icon + '</div>' +
+        '<div class="precondition-info">' +
+        '<div class="precondition-label">' + label + '</div>' +
+        '<div class="precondition-value" style="color: ' + okColor + ';">' + valueText + '</div>' +
+        '</div>' +
+        '<span class="precondition-check" style="color: ' + checkColor + ';">' + checkSymbol + '</span>' +
+        '</div>';
+    }
+
+    function createInputOutputItemHTML(name, value) {
+      var valueColor = value === '待产生' ? '#faad14' : '#fff';
+      return '<div class="input-output-item">' +
+        '<span class="input-output-name">' + name + '</span>' +
+        '<span class="input-output-value" style="color: ' + valueColor + ';">' + value + '</span>' +
+        '</div>';
+    }
+
+    function renderDashboard() {
+      var app = document.getElementById('app');
+      var html = '';
+      
+      html += '<div class="page">';
+      html += '<div class="header"><h1>试验项目管理系统</h1><p>数字化实验室大屏展示平台</p></div>';
+
+      var ongoing = mockProjects.filter(function(p) { return p.status === '试验中' || p.status === '准备中' || p.status === '异常挂起'; }).length;
+      var completed = mockProjects.filter(function(p) { return p.status === '已完成'; }).length;
+      var abnormal = mockProjects.filter(function(p) { return p.status === '异常挂起'; }).length;
+
+      html += '<div class="stat-row">';
+      html += '<div class="stat-card"><div class="stat-content"><div><div class="stat-label">当前开展项目数</div><div class="stat-value">' + ongoing + '</div></div><div class="stat-icon" style="background: rgba(24, 144, 255, 0.2); color: #1890ff;">📊</div></div></div>';
+      html += '<div class="stat-card success"><div class="stat-content"><div><div class="stat-label">本年度已完成项目数</div><div class="stat-value">' + completed + '</div></div><div class="stat-icon" style="background: rgba(82, 196, 26, 0.2); color: #52c41a;">✅</div></div></div>';
+      html += '<div class="stat-card"><div class="stat-content"><div><div class="stat-label">本年度已完成试验数</div><div class="stat-value">167</div></div><div class="stat-icon" style="background: rgba(19, 194, 194, 0.2); color: #13c2c2;">🔬</div></div></div>';
+      html += '<div class="stat-card error"><div class="stat-content"><div><div class="stat-label">当前异常/拖期项目数</div><div class="stat-value">' + abnormal + '</div></div><div class="stat-icon" style="background: rgba(255, 77, 79, 0.2); color: #ff4d4f;">⚠️</div></div></div>';
+      html += '</div>';
+
+      html += '<div class="card-row">';
+      
+      html += '<div class="card">';
+      html += '<h3 class="card-title">车型项目状态分布</h3>';
+      html += '<div class="pie-container">';
+      html += '<svg class="pie-chart" viewBox="0 0 120 120">' + createVehiclePieChartSVG() + '</svg>';
+      html += '<div class="pie-legend">';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #1890ff;"></div>进行中: ' + mockProjects.filter(function(p) { return p.status === '试验中' || p.status === '准备中' || p.status === '异常挂起'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #6b7b8c;"></div>排队中: ' + mockProjects.filter(function(p) { return p.status === '排队中'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #52c41a;"></div>已完成: ' + mockProjects.filter(function(p) { return p.status === '已完成'; }).length + '</div>';
+      html += '</div></div></div>';
+      
+      html += '<div class="card">';
+      html += '<h3 class="card-title">进行中的车型项目</h3>';
+      html += '<div class="project-grid" style="grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 8px;">';
+      var vehicleProjects = mockProjects.filter(function(p) { return p.status === '试验中' || p.status === '准备中' || p.status === '异常挂起'; });
+      vehicleProjects.forEach(function(project) {
+        var progress = Math.round((project.stepIndex / project.steps.length) * 100);
+        html += '<div class="mini-project-card">' +
+          '<div class="mini-project-header">' + project.name + '<span class="' + getTagClass(project.status) + '">' + project.status + '</span></div>' +
+          '<div class="mini-progress"><div class="progress-bar" style="height: 6px;"><div class="progress-fill" style="width: ' + progress + '%;"></div></div><span>' + progress + '%</span></div>' +
+          '<div class="mini-info">' + project.person + ' | ' + project.endTime + '</div>' +
+          '</div>';
+      });
+      for (var i = vehicleProjects.length; i < 6; i++) {
+        html += '<div class="mini-project-card placeholder"></div>';
+      }
+      html += '</div></div>';
+      
+      html += '<div class="card">';
+      html += '<h3 class="card-title">试验项目状态分布</h3>';
+      html += '<div class="pie-container">';
+      html += '<svg class="pie-chart" viewBox="0 0 120 120">' + createTestPieChartSVG() + '</svg>';
+      html += '<div class="pie-legend">';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #1890ff;"></div>试验中: ' + mockTests.filter(function(t) { return t.status === '试验中'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #faad14;"></div>准备中: ' + mockTests.filter(function(t) { return t.status === '准备中'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #6b7b8c;"></div>排队中: ' + mockTests.filter(function(t) { return t.status === '排队中'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #52c41a;"></div>已完成: ' + mockTests.filter(function(t) { return t.status === '已完成'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #ff4d4f;"></div>异常挂起: ' + mockTests.filter(function(t) { return t.status === '异常挂起'; }).length + '</div>';
+      html += '</div></div></div>';
+      
+      html += '<div class="card">';
+      html += '<h3 class="card-title">进行中的试验项目</h3>';
+      html += '<div class="project-grid" style="grid-template-columns: repeat(3, 1fr); gap: 8px;">';
+      var activeTests = mockTests.filter(function(t) { return t.status === '试验中' || t.status === '准备中' || t.status === '异常挂起'; });
+      activeTests.forEach(function(test) {
+        var progress = Math.round((test.stepIndex / test.steps.length) * 100);
+        html += '<div class="mini-project-card">' +
+          '<div class="mini-project-header">' + test.name + '<span class="' + getTagClass(test.status) + '">' + test.status + '</span></div>' +
+          '<div class="mini-project-info">VIN: ' + test.vin + ' | 车型: ' + test.model + '</div>' +
+          '<div class="mini-project-step">当前步骤: ' + (test.steps[test.stepIndex] ? test.steps[test.stepIndex].name : '-') + '</div>' +
+          '<div class="mini-progress"><div class="progress-bar" style="height: 6px;"><div class="progress-fill" style="width: ' + progress + '%;"></div></div><span>' + progress + '%</span></div>' +
+          '<div class="mini-info">' + test.person + ' | ' + test.endTime + '</div>' +
+          '</div>';
+      });
+      html += '</div></div>';
+      
+      html += '</div>';
+
+      html += '<div class="card" style="margin-bottom: 12px;">';
+      html += '<h3 class="card-title">近期待完成</h3>';
+      html += '<div class="timeline-horizontal">';
+      mockTests.filter(function(t) { return t.status !== '已完成'; }).sort(function(a, b) { return a.endTime.localeCompare(b.endTime); }).forEach(function(test) {
+        html += createTimelineItemHTML(test);
+      });
+      html += '</div></div>';
+
+      var itemsPerPage = 3;
+      var totalPages = Math.ceil(mockProjects.length / itemsPerPage);
+      var currentPage = 1;
+      
+      function renderTable(pageNum) {
+        var start = (pageNum - 1) * itemsPerPage;
+        var end = start + itemsPerPage;
+        var paginatedProjects = mockProjects.slice(start, end);
+        
+        var tableHtml = '<div class="card fixed-height">';
+        tableHtml += '<h3 class="card-title">试验项目列表</h3>';
+        tableHtml += '<div class="table-container" style="min-height: 80px;">';
+        tableHtml += '<table class="data-table">';
+        tableHtml += '<thead><tr><th>项目名称</th><th>试验名称</th><th>VIN</th><th>车型</th><th>状态</th><th>进度</th><th>当前步骤</th><th>负责人</th><th>预计完成</th></tr></thead>';
+        tableHtml += '<tbody>';
+        paginatedProjects.forEach(function(project) {
+          tableHtml += createTableRowHTML(project);
+        });
+        for (var i = paginatedProjects.length; i < itemsPerPage; i++) {
+          tableHtml += '<tr><td colspan="9"></td></tr>';
+        }
+        tableHtml += '</tbody></table></div>';
+        
+        tableHtml += '<div class="pagination">';
+        tableHtml += '<button class="btn btn-default pagination-btn" ' + (pageNum <= 1 ? 'disabled' : '') + ' data-page="' + (pageNum - 1) + '">上一页</button>';
+        for (var j = 1; j <= totalPages; j++) {
+          tableHtml += '<button class="btn pagination-btn ' + (j === pageNum ? 'active' : '') + '" data-page="' + j + '">' + j + '</button>';
+        }
+        tableHtml += '<button class="btn btn-default pagination-btn" ' + (pageNum >= totalPages ? 'disabled' : '') + ' data-page="' + (pageNum + 1) + '">下一页</button>';
+        tableHtml += '</div></div>';
+        
+        return tableHtml;
+      }
+      
+      html += renderTable(currentPage);
+      
+      app.innerHTML = html;
+      attachDashboardEventListeners();
+      
+      app.addEventListener('click', function(e) {
+        var pageBtn = e.target.closest('.pagination-btn');
+        if (pageBtn && !pageBtn.disabled) {
+          var pageNum = parseInt(pageBtn.getAttribute('data-page'));
+          if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+            currentPage = pageNum;
+            html = '';
+            html += '<div class="page">';
+            html += '<div class="header"><h1>试验项目管理系统</h1><p>数字化实验室大屏展示平台</p></div>';
+            
+            var ongoing = mockProjects.filter(function(p) { return p.status === '试验中'; }).length;
+            var completed = mockProjects.filter(function(p) { return p.status === '已完成'; }).length;
+            var abnormal = mockProjects.filter(function(p) { return p.status === '异常挂起'; }).length;
+            
+            html += '<div class="stat-row">';
+            html += '<div class="stat-card"><div class="stat-content"><div><div class="stat-label">当前开展项目数</div><div class="stat-value">' + ongoing + '</div></div><div class="stat-icon" style="background: rgba(24, 144, 255, 0.2); color: #1890ff;">📊</div></div></div>';
+            html += '<div class="stat-card success"><div class="stat-content"><div><div class="stat-label">本年度已完成项目数</div><div class="stat-value">' + completed + '</div></div><div class="stat-icon" style="background: rgba(82, 196, 26, 0.2); color: #52c41a;">✅</div></div></div>';
+            html += '<div class="stat-card"><div class="stat-content"><div><div class="stat-label">本年度已完成试验数</div><div class="stat-value">167</div></div><div class="stat-icon" style="background: rgba(19, 194, 194, 0.2); color: #13c2c2;">🔬</div></div></div>';
+            html += '<div class="stat-card error"><div class="stat-content"><div><div class="stat-label">当前异常/拖期项目数</div><div class="stat-value">' + abnormal + '</div></div><div class="stat-icon" style="background: rgba(255, 77, 79, 0.2); color: #ff4d4f;">⚠️</div></div></div>';
+            html += '</div>';
+
+      html += '<div class="card-row">';
+      
+      html += '<div class="card">';
+      html += '<h3 class="card-title">车型项目状态分布</h3>';
+      html += '<div class="pie-container">';
+      html += '<svg class="pie-chart" viewBox="0 0 120 120">' + createVehiclePieChartSVG() + '</svg>';
+      html += '<div class="pie-legend">';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #1890ff;"></div>进行中: ' + mockProjects.filter(function(p) { return p.status === '试验中' || p.status === '准备中' || p.status === '异常挂起'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #6b7b8c;"></div>排队中: ' + mockProjects.filter(function(p) { return p.status === '排队中'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #52c41a;"></div>已完成: ' + mockProjects.filter(function(p) { return p.status === '已完成'; }).length + '</div>';
+      html += '</div></div></div>';
+      
+      html += '<div class="card">';
+      html += '<h3 class="card-title">进行中的车型项目</h3>';
+      html += '<div class="project-grid" style="grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 8px;">';
+      var vehicleProjects = mockProjects.filter(function(p) { return p.status === '试验中' || p.status === '准备中' || p.status === '异常挂起'; });
+      vehicleProjects.forEach(function(project) {
+        var progress = Math.round((project.stepIndex / project.steps.length) * 100);
+        html += '<div class="mini-project-card">' +
+          '<div class="mini-project-header">' + project.name + '<span class="' + getTagClass(project.status) + '">' + project.status + '</span></div>' +
+          '<div class="mini-progress"><div class="progress-bar" style="height: 6px;"><div class="progress-fill" style="width: ' + progress + '%;"></div></div><span>' + progress + '%</span></div>' +
+          '<div class="mini-info">' + project.person + ' | ' + project.endTime + '</div>' +
+          '</div>';
+      });
+      for (var i = vehicleProjects.length; i < 6; i++) {
+        html += '<div class="mini-project-card placeholder"></div>';
+      }
+      html += '</div></div>';
+      
+      html += '<div class="card">';
+      html += '<h3 class="card-title">试验项目状态分布</h3>';
+      html += '<div class="pie-container">';
+      html += '<svg class="pie-chart" viewBox="0 0 120 120">' + createTestPieChartSVG() + '</svg>';
+      html += '<div class="pie-legend">';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #1890ff;"></div>试验中: ' + mockTests.filter(function(t) { return t.status === '试验中'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #faad14;"></div>准备中: ' + mockTests.filter(function(t) { return t.status === '准备中'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #6b7b8c;"></div>排队中: ' + mockTests.filter(function(t) { return t.status === '排队中'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #52c41a;"></div>已完成: ' + mockTests.filter(function(t) { return t.status === '已完成'; }).length + '</div>';
+      html += '<div class="legend-item"><div class="legend-color" style="background: #ff4d4f;"></div>异常挂起: ' + mockTests.filter(function(t) { return t.status === '异常挂起'; }).length + '</div>';
+      html += '</div></div></div>';
+      
+      html += '<div class="card">';
+      html += '<h3 class="card-title">进行中的试验项目</h3>';
+      html += '<div class="project-grid" style="grid-template-columns: repeat(3, 1fr); gap: 8px;">';
+      var activeTests = mockTests.filter(function(t) { return t.status === '试验中' || t.status === '准备中' || t.status === '异常挂起'; });
+      activeTests.forEach(function(test) {
+        var progress = Math.round((test.stepIndex / test.steps.length) * 100);
+        html += '<div class="mini-project-card">' +
+          '<div class="mini-project-header">' + test.name + '<span class="' + getTagClass(test.status) + '">' + test.status + '</span></div>' +
+          '<div class="mini-project-info">VIN: ' + test.vin + ' | 车型: ' + test.model + '</div>' +
+          '<div class="mini-project-step">当前步骤: ' + (test.steps[test.stepIndex] ? test.steps[test.stepIndex].name : '-') + '</div>' +
+          '<div class="mini-progress"><div class="progress-bar" style="height: 6px;"><div class="progress-fill" style="width: ' + progress + '%;"></div></div><span>' + progress + '%</span></div>' +
+          '<div class="mini-info">' + test.person + ' | ' + test.endTime + '</div>' +
+          '</div>';
+      });
+      html += '</div></div>';
+      
+      html += '</div>';
+
+      html += '<div class="card" style="margin-bottom: 12px;">';
+      html += '<h3 class="card-title">近期待完成</h3>';
+      html += '<div class="timeline-horizontal">';
+      mockTests.filter(function(t) { return t.status !== '已完成'; }).sort(function(a, b) { return a.endTime.localeCompare(b.endTime); }).forEach(function(test) {
+        html += createTimelineItemHTML(test);
+      });
+      html += '</div></div>';
+
+      html += renderTable(currentPage);
+            
+            app.innerHTML = html;
+            attachDashboardEventListeners();
+          }
+        }
+      });
+    }
+
+    function attachDashboardEventListeners() {
+      var app = document.getElementById('app');
+      
+      app.addEventListener('click', function(e) {
+        var projectCard = e.target.closest('.project-card');
+        if (projectCard) {
+          var projectId = projectCard.getAttribute('data-projectid');
+          if (projectId) {
+            showDetail(projectId);
+          }
+          return;
+        }
+        
+        var tableRow = e.target.closest('tr[data-projectid]');
+        if (tableRow) {
+          var projectId = tableRow.getAttribute('data-projectid');
+          if (projectId) {
+            showDetail(projectId);
+          }
+          return;
+        }
+        
+        var timelineItem = e.target.closest('.timeline-item, .timeline-item-horizontal');
+        if (timelineItem) {
+          var projectId = timelineItem.getAttribute('data-projectid');
+          if (projectId) {
+            showDetail(projectId);
+          }
+          return;
+        }
+        
+        var statusBtn = e.target.closest('.btn-suspend, .btn-resume');
+        if (statusBtn) {
+          e.stopPropagation();
+          var projectId = statusBtn.getAttribute('data-projectid');
+          if (projectId) {
+            toggleProjectStatus(projectId);
+          }
+          return;
+        }
+      });
+    }
+    
+    function toggleProjectStatus(projectId) {
+      var project = mockProjects.find(function(p) { return p.id === projectId; });
+      if (!project) return;
+      
+      if (project.status === '已完成' || project.status === '排队中') {
+        return;
+      }
+      
+      if (project.status === '异常挂起') {
+        project.status = '试验中';
+        project.steps.forEach(function(step) {
+          if (step.status === '异常挂起') {
+            step.status = '未开始';
+          }
+        });
+      } else {
+        project.status = '异常挂起';
+        project.steps[project.stepIndex].status = '异常挂起';
+      }
+      showDashboard();
+    }
+
+    function showDetail(projectId) {
+      var project = mockProjects.find(function(p) { return p.id === projectId; });
+      if (!project) return;
+      
+      var app = document.getElementById('app');
+      var progress = Math.round((project.stepIndex / project.steps.length) * 100);
+      var progressColor = project.status === '异常挂起' ? '#ff4d4f' : (project.status === '已完成' ? '#52c41a' : '#1890ff');
+      var tagClass = getTagClass(project.status);
+      
+      var html = '<div class="detail-page">';
+      var canToggleStatus = project.status !== '已完成' && project.status !== '排队中';
+      var isSuspended = project.status === '异常挂起';
+      var btnClass = isSuspended ? 'btn-resume' : 'btn btn-suspend';
+      var btnText = isSuspended ? '✓ 取消异常挂起' : '⚠️ 异常挂起';
+      
+      html += '<div class="detail-header">';
+      html += '<div><button class="btn btn-default" id="btn-back">返回仪表板</button>';
+      html += '<div class="detail-title"><h1>' + project.name + '</h1><p>VIN: ' + project.vin + ' | 车型: ' + project.model + '</p></div></div>';
+      html += '<div style="display: flex; gap: 12px; align-items: center;">';
+      html += '<span class="' + tagClass + '">' + project.status + '</span>';
+      html += (canToggleStatus ? '<button class="' + btnClass + '" data-projectid="' + project.id + '" title="' + btnText + '">' + btnText + '</button>' : '');
+      html += '</div>';
+      html += '</div>';
+
+      html += '<div class="detail-cards">';
+      html += '<div class="detail-card"><div class="detail-card-label">整体进度</div><div class="detail-card-value"><div class="progress-bar" style="margin-top: 8px;"><div class="progress-fill" style="width: ' + progress + '%; background: ' + progressColor + ';"></div></div><span style="margin-left: 8px;">' + progress + '%</span></div></div>';
+      html += '<div class="detail-card"><div class="detail-card-label">当前步骤</div><div class="detail-card-value">' + (project.steps[project.stepIndex] ? project.steps[project.stepIndex].name : '已完成') + '</div></div>';
+      html += '<div class="detail-card"><div class="detail-card-label">负责人</div><div class="detail-card-value">' + project.person + '</div></div>';
+      html += '<div class="detail-card"><div class="detail-card-label">预计完成</div><div class="detail-card-value">' + project.endTime + '</div></div>';
+      html += '</div>';
+
+      html += '<div class="steps-container">';
+      html += '<div class="steps-list">';
+      project.steps.forEach(function(step, index) {
+        var isActive = index === project.stepIndex;
+        var isCompleted = step.status === '已完成';
+        var isError = step.status === '异常挂起';
+        var className = 'step-item';
+        if (isActive) className += ' active';
+        if (isCompleted) className += ' completed';
+        if (isError) className += ' error';
+        
+        html += '<div class="step-item ' + className + '" data-stepindex="' + index + '" data-projectid="' + project.id + '">';
+        html += '<div class="step-title">' + (step.name.length > 20 ? step.name.substring(0, 20) + '...' : step.name) + '</div>';
+        html += '<div class="step-status">' + step.status + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+
+      var selectedStep = project.steps[project.stepIndex];
+      if (selectedStep) {
+        html += '<div class="step-detail">';
+        html += '<div class="detail-section"><h4 class="detail-section-title">前置条件检查</h4>';
+        html += createPreconditionItemHTML('👤', '人员资格', selectedStep.pre.person);
+        html += createPreconditionItemHTML('🔧', '设备资源', selectedStep.pre.machine);
+        html += createPreconditionItemHTML('📦', '传感器/物资', selectedStep.pre.material);
+        html += createPreconditionItemHTML('🏭', '场地环境', selectedStep.pre.env);
+        html += '</div>';
+
+        html += '<div class="detail-section"><h4 class="detail-section-title">输入信息</h4>';
+        if (selectedStep.inputs.length > 0) {
+          selectedStep.inputs.forEach(function(input) {
+            html += createInputOutputItemHTML(input.name, input.value);
+          });
+        } else {
+          html += '<div style="color: #6b7b8c; font-size: 13px; padding: 8px 0;">无输入信息</div>';
+        }
+        html += '</div>';
+
+        html += '<div class="detail-section"><h4 class="detail-section-title">输出信息</h4>';
+        if (selectedStep.outputs.length > 0) {
+          selectedStep.outputs.forEach(function(output) {
+            html += createInputOutputItemHTML(output.name, output.value);
+          });
+        } else {
+          html += '<div style="color: #6b7b8c; font-size: 13px; padding: 8px 0;">' + (selectedStep.status === '已完成' ? '无输出信息' : '待产生') + '</div>';
+        }
+        html += '</div>';
+
+        if (project.stepIndex === project.currentStepIndex) {
+          html += '<div class="actions">';
+          if (selectedStep.status === '就绪') {
+            html += '<button class="btn btn-primary">开始执行</button>';
+          } else if (selectedStep.status === '进行中') {
+            html += '<button class="btn" style="background: #ff4d4f;">上报异常</button>';
+          } else if (selectedStep.status === '异常挂起') {
+            html += '<button class="btn btn-primary">解除异常</button>';
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+
+      html += '</div></div>';
+      
+      app.innerHTML = html;
+      
+      document.getElementById('btn-back').addEventListener('click', renderDashboard);
+      
+      app.addEventListener('click', function(e) {
+        var stepItem = e.target.closest('.step-item');
+        if (stepItem && !e.target.classList.contains('btn')) {
+          var projectId = stepItem.getAttribute('data-projectid');
+          var stepIndex = parseInt(stepItem.getAttribute('data-stepindex'));
+          if (projectId && !isNaN(stepIndex)) {
+            showStepDetail(projectId, stepIndex);
+          }
+          return;
+        }
+        
+        var statusBtn = e.target.closest('.btn-suspend, .btn-resume');
+        if (statusBtn) {
+          var projectId = statusBtn.getAttribute('data-projectid');
+          if (projectId) {
+            toggleProjectStatus(projectId);
+            showDetail(projectId);
+          }
+          return;
+        }
+      });
+    }
+    
+    function showStepDetail(projectId, stepIndex) {
+      var project = mockProjects.find(function(p) { return p.id === projectId; });
+      if (!project) return;
+      
+      var app = document.getElementById('app');
+      var tagClass = getTagClass(project.status);
+      
+      var html = '<div class="detail-page">';
+      var canToggleStatus = project.status !== '已完成' && project.status !== '排队中';
+      var isSuspended = project.status === '异常挂起';
+      var btnClass = isSuspended ? 'btn-resume' : 'btn btn-suspend';
+      var btnText = isSuspended ? '✓ 取消异常挂起' : '⚠️ 异常挂起';
+      
+      html += '<div class="detail-header">';
+      html += '<div><button class="btn btn-default" id="btn-back">返回仪表板</button>';
+      html += '<div class="detail-title"><h1>' + project.name + '</h1><p>VIN: ' + project.vin + ' | 车型: ' + project.model + '</p></div></div>';
+      html += '<div style="display: flex; gap: 12px; align-items: center;">';
+      html += '<span class="' + tagClass + '">' + project.status + '</span>';
+      html += (canToggleStatus ? '<button class="' + btnClass + '" data-projectid="' + project.id + '" title="' + btnText + '">' + btnText + '</button>' : '');
+      html += '</div>';
+      html += '</div>';
+
+      html += '<div class="steps-container">';
+      html += '<div class="steps-list">';
+      project.steps.forEach(function(step, index) {
+        var isActive = index === stepIndex;
+        var isCompleted = step.status === '已完成';
+        var isError = step.status === '异常挂起';
+        var className = 'step-item';
+        if (isActive) className += ' active';
+        if (isCompleted) className += ' completed';
+        if (isError) className += ' error';
+        
+        html += '<div class="step-item ' + className + '" data-stepindex="' + index + '" data-projectid="' + project.id + '">';
+        html += '<div class="step-title">' + (step.name.length > 20 ? step.name.substring(0, 20) + '...' : step.name) + '</div>';
+        html += '<div class="step-status">' + step.status + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+
+      var selectedStep = project.steps[stepIndex];
+      if (selectedStep) {
+        html += '<div class="step-detail">';
+        html += '<div class="detail-section"><h4 class="detail-section-title">前置条件检查</h4>';
+        html += createPreconditionItemHTML('👤', '人员资格', selectedStep.pre.person);
+        html += createPreconditionItemHTML('🔧', '设备资源', selectedStep.pre.machine);
+        html += createPreconditionItemHTML('📦', '传感器/物资', selectedStep.pre.material);
+        html += createPreconditionItemHTML('🏭', '场地环境', selectedStep.pre.env);
+        html += '</div>';
+
+        html += '<div class="detail-section"><h4 class="detail-section-title">输入信息</h4>';
+        if (selectedStep.inputs.length > 0) {
+          selectedStep.inputs.forEach(function(input) {
+            html += createInputOutputItemHTML(input.name, input.value);
+          });
+        } else {
+          html += '<div style="color: #6b7b8c; font-size: 13px; padding: 8px 0;">无输入信息</div>';
+        }
+        html += '</div>';
+
+        html += '<div class="detail-section"><h4 class="detail-section-title">输出信息</h4>';
+        if (selectedStep.outputs.length > 0) {
+          selectedStep.outputs.forEach(function(output) {
+            html += createInputOutputItemHTML(output.name, output.value);
+          });
+        } else {
+          html += '<div style="color: #6b7b8c; font-size: 13px; padding: 8px 0;">' + (selectedStep.status === '已完成' ? '无输出信息' : '待产生') + '</div>';
+        }
+        html += '</div>';
+
+        if (stepIndex === project.currentStepIndex) {
+          html += '<div class="actions">';
+          if (selectedStep.status === '就绪') {
+            html += '<button class="btn btn-primary">开始执行</button>';
+          } else if (selectedStep.status === '进行中') {
+            html += '<button class="btn" style="background: #ff4d4f;">上报异常</button>';
+          } else if (selectedStep.status === '异常挂起') {
+            html += '<button class="btn btn-primary">解除异常</button>';
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+
+      html += '</div></div>';
+      
+      app.innerHTML = html;
+      
+      document.getElementById('btn-back').addEventListener('click', renderDashboard);
+      
+      app.addEventListener('click', function(e) {
+        var stepItem = e.target.closest('.step-item');
+        if (stepItem && !e.target.classList.contains('btn')) {
+          var projectId = stepItem.getAttribute('data-projectid');
+          var idx = parseInt(stepItem.getAttribute('data-stepindex'));
+          if (projectId && !isNaN(idx)) {
+            showStepDetail(projectId, idx);
+          }
+          return;
+        }
+        
+        var statusBtn = e.target.closest('.btn-suspend, .btn-resume');
+        if (statusBtn) {
+          var projectId = statusBtn.getAttribute('data-projectid');
+          if (projectId) {
+            toggleProjectStatus(projectId);
+            showStepDetail(projectId, stepIndex);
+          }
+          return;
+        }
+      });
+    }
+    
+    window.onload = function() {
+      renderDashboard();
+    };
+  </script>
+</body>
+</html>
